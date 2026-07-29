@@ -7,3 +7,4 @@ receiver.py
 *.pdf
 *.json
 !questions_data.json
+!endpoint.json

@@ -197,11 +197,23 @@ body{
 
 <script>
 /* ─────────── 설정 ───────────
-   ENDPOINT에 서버 주소를 넣으면 제출 시 JSON을 POST합니다.
-   비워 두면(개발/수동 운영) 응답 JSON 파일을 다운로드합니다. */
+   제출 시 endpoint.json(접수 서버 주소)을 자동 조회해 POST합니다.
+   조회/전송 실패 시 응답 JSON 파일 다운로드로 자동 전환됩니다. */
 const CONFIG = {
-  ENDPOINT: "",   // 예: "https://내서버/api/cmap/submit"
+  ENDPOINT: "",                 // 고정 서버 주소 (비우면 endpoint.json 자동 탐색)
+  DISCOVERY: "endpoint.json",   // 접수 서버 주소 파일 (run_service.py가 갱신)
+  TOKEN: "cmap-aioe-2026",
 };
+
+async function resolveEndpoint(){
+  if(CONFIG.ENDPOINT) return CONFIG.ENDPOINT;
+  try{
+    const r = await fetch(CONFIG.DISCOVERY + "?t=" + Date.now(), {cache:"no-store"});
+    if(!r.ok) return null;
+    const j = await r.json();
+    return j.endpoint || null;
+  }catch(e){ return null; }
+}
 
 const QUESTIONS = [{"no":1,"qid":66,"text":"갈등 상황에서 서로의 입장을 조율해 본 적이 있다."},{"no":2,"qid":43,"text":"사람들과 어울리고 관계를 맺는 일에서 에너지를 얻는다."},{"no":3,"qid":16,"text":"코딩·제작·조립 등 손이나 기술로 결과물을 만드는 게 즐겁다."},{"no":4,"qid":10,"text":"상상한 것을 실제 작품이나 콘텐츠로 구현하고 싶다."},{"no":5,"qid":99,"text":"복잡한 기계나 물건의 작동 원리를, 설명서보다 직접 만지고 분해해 보며 더 빨리 파악한다."},{"no":6,"qid":59,"text":"명확한 정답이 없는 상황에서 판단을 내리기 어렵다."},{"no":7,"qid":2,"text":"복잡한 문제를 논리적으로 쪼개어 분석하는 데 강하다."},{"no":8,"qid":74,"text":"변화에 맞춰 새로운 것을 계속 배우려 한다."},{"no":9,"qid":91,"text":"혼자 독립적으로 일할 때 가장 능률이 오른다."},{"no":10,"qid":104,"text":"현장의 물리적인 작업(조립·수리·시공 등)은 나와 거리가 먼 일처럼 느껴진다."},{"no":11,"qid":80,"text":"위험을 감수하기보다 확실한 길을 택하는 편이다."},{"no":12,"qid":77,"text":"익숙한 것에 머무르고 새 학습은 미루는 편이다."},{"no":13,"qid":11,"text":"창의적으로 만드는 일보다 정해진 절차를 따르는 게 편하다."},{"no":14,"qid":42,"text":"새로운 디지털 도구를 익히는 게 번거롭게 느껴진다."},{"no":15,"qid":68,"text":"새로운 기술이 나오면 두려워하기보다 먼저 써 본다."},{"no":16,"qid":67,"text":"AI·디지털 도구를 적극적으로 써서 일의 효율을 높인다."},{"no":17,"qid":53,"text":"창의적 발상을 요구하는 과제는 막막하게 느껴진다."},{"no":18,"qid":57,"text":"겉으로 드러난 것 너머의 ‘진짜 문제’를 파악하려 한다."},{"no":19,"qid":34,"text":"복잡한 일을 질서 있게 구조화하는 데서 만족을 느낀다."},{"no":20,"qid":31,"text":"일을 체계적으로 정리하고 계획대로 관리하는 게 좋다."},{"no":21,"qid":69,"text":"AI가 준 결과를 그대로 믿지 않고 검토·보완해 활용한다."},{"no":22,"qid":61,"text":"상대의 입장과 감정을 헤아려 행동한다."},{"no":23,"qid":73,"text":"필요한 것을 스스로 찾아 배우는 데 익숙하다."},{"no":24,"qid":27,"text":"협상하거나 거래를 성사시키는 일에 흥미가 있다."},{"no":25,"qid":60,"text":"맥락에 따라 ‘무엇이 옳은지’ 유연하게 판단한다."},{"no":26,"qid":9,"text":"정해진 답보다 ‘나만의 방식’으로 만드는 것을 좋아한다."},{"no":27,"qid":22,"text":"타인의 고민을 들어 주고 함께 해결하려 한다."},{"no":28,"qid":64,"text":"다른 사람의 감정 상태를 잘 알아차리지 못한다."},{"no":29,"qid":33,"text":"데이터·문서·일정을 꼼꼼히 관리하는 것을 잘한다."},{"no":30,"qid":84,"text":"내 일이 사회나 타인에게 도움이 되는 것이 중요하다."},{"no":31,"qid":38,"text":"새로운 디지털 기술·앱·AI 도구를 빨리 익히고 활용한다."},{"no":32,"qid":45,"text":"갈등을 조율하거나 분위기를 부드럽게 만드는 데 강하다."},{"no":33,"qid":83,"text":"꾸준하고 안정적인 수입·지위가 중요하다."},{"no":34,"qid":97,"text":"다양한 일을 경험하며 폭넓게 일하고 싶다."},{"no":35,"qid":51,"text":"‘원래 그런 것’도 ‘다르게 할 수 없을까’ 다시 생각해 본다."},{"no":36,"qid":63,"text":"신뢰를 쌓아 사람들과 협력 관계를 잘 만든다."},{"no":37,"qid":46,"text":"다양한 사람과 소통하고 협력하는 일이 즐겁다."},{"no":38,"qid":50,"text":"서로 관계없어 보이는 것들을 연결해 아이디어를 만든다."},{"no":39,"qid":48,"text":"여럿이 협력하기보다 혼자 일하는 게 훨씬 편하다."},{"no":40,"qid":103,"text":"몸을 움직이거나 도구를 다루는 일보다 책상에 앉아 화면으로 처리하는 일이 훨씬 편하다."},{"no":41,"qid":56,"text":"여러 요소를 동시에 고려해 균형 잡힌 결정을 한다."},{"no":42,"qid":89,"text":"여럿이 함께 만들어 가는 일에서 보람을 느낀다."},{"no":43,"qid":13,"text":"기계·장치·프로그램이 어떻게 작동하는지 이해하고 다루는 게 좋다."},{"no":44,"qid":37,"text":"데이터를 다루고 그 속에서 의미·패턴을 찾는 일이 흥미롭다."},{"no":45,"qid":24,"text":"타인의 문제에 깊이 관여하고 싶지 않다."},{"no":46,"qid":40,"text":"온라인·디지털 환경에서 일하거나 만드는 것이 자연스럽다."},{"no":47,"qid":41,"text":"데이터·통계를 다루는 일은 나와 맞지 않는다."},{"no":48,"qid":19,"text":"다른 사람의 성장이나 회복을 돕는 일에 보람을 느낀다."},{"no":49,"qid":79,"text":"나는 예측 가능하고 안정적인 환경에서 일하고 싶다."},{"no":50,"qid":6,"text":"이론·원리를 따지는 일은 지루하게 느껴진다."},{"no":51,"qid":25,"text":"사람들을 설득하거나 내 의견으로 이끄는 일에 자신 있다."},{"no":52,"qid":8,"text":"남들이 생각 못한 새로운 아이디어를 떠올리는 데 강하다."},{"no":53,"qid":35,"text":"정해진 절차나 규칙에 맞추는 일은 답답하다."},{"no":54,"qid":85,"text":"돈·명예보다 ‘의미 있는 일’을 하고 싶다."},{"no":55,"qid":47,"text":"사람들과 계속 어울리는 일은 피곤하다."},{"no":56,"qid":3,"text":"새로운 지식이나 이론을 깊이 파고드는 것을 좋아한다."},{"no":57,"qid":52,"text":"새로운 방식을 찾기보다 기존 방식을 따르는 게 편하다."},{"no":58,"qid":17,"text":"기계나 기술을 다루는 일은 나와 잘 맞지 않는다."},{"no":59,"qid":39,"text":"숫자·통계로 현상을 설명하거나 예측하는 데 끌린다."},{"no":60,"qid":62,"text":"사람마다 다른 needs를 읽고 맞춰 소통한다."},{"no":61,"qid":81,"text":"안정보다는 새로운 도전과 변화가 끌린다."},{"no":62,"qid":23,"text":"남을 돌보거나 가르치는 일은 부담스럽다."},{"no":63,"qid":7,"text":"글·그림·영상·음악 등으로 내 생각을 표현하는 것이 즐겁다."},{"no":64,"qid":49,"text":"정답이 없는 문제에 나만의 새로운 해법을 잘 떠올린다."},{"no":65,"qid":94,"text":"한 분야를 깊이 파고들어 전문가가 되고 싶다."},{"no":66,"qid":96,"text":"한 분야보다 여러 분야를 넘나드는 게 좋다."},{"no":67,"qid":71,"text":"AI 같은 도구는 나와 거리가 멀게 느껴진다."},{"no":68,"qid":86,"text":"사회적 의미보다 나의 성취·성공이 더 중요하다."},{"no":69,"qid":20,"text":"누군가를 가르치거나 이끌어 주는 것이 즐겁다."},{"no":70,"qid":75,"text":"누가 시키지 않아도 관심 분야를 깊이 파고든다."},{"no":71,"qid":44,"text":"상대의 감정을 잘 읽고 공감하는 편이다."},{"no":72,"qid":90,"text":"팀의 일원으로 협력할 때 더 좋은 결과를 낸다."},{"no":73,"qid":21,"text":"아프거나 어려운 사람을 보살피는 일에 끌린다."},{"no":74,"qid":1,"text":"현상이나 데이터를 파고들어 ‘왜 그런지’ 원인을 밝히는 일이 즐겁다."},{"no":75,"qid":100,"text":"갑작스러운 상황(사고·고장 등)이 생기면 머리로 따지기 전에 몸이 먼저 반응해 대처한다."},{"no":76,"qid":58,"text":"복잡하게 얽힌 문제는 깊이 따지지 않고 넘긴다."},{"no":77,"qid":98,"text":"깊은 전문성이 미래 경쟁력이라고 생각한다."},{"no":78,"qid":54,"text":"낯선 상황에서도 임기응변으로 길을 찾아낸다."},{"no":79,"qid":93,"text":"함께 일하며 시너지를 내는 것을 선호한다."},{"no":80,"qid":26,"text":"팀을 이끌고 목표를 향해 끌고 가는 역할이 좋다."},{"no":81,"qid":72,"text":"도구를 ‘무엇에 어떻게 쓸지’ 스스로 궁리해 본다."},{"no":82,"qid":88,"text":"세상을 더 낫게 만드는 데 기여하고 싶다."},{"no":83,"qid":78,"text":"실패해도 거기서 배워 다음에 적용한다."},{"no":84,"qid":65,"text":"상대에 맞춰 소통 방식을 바꾸는 게 어렵다."},{"no":85,"qid":30,"text":"주목받거나 앞에 나서는 역할은 피하고 싶다."},{"no":86,"qid":28,"text":"여러 사람 앞에서 발표하거나 주도하는 게 즐겁다."},{"no":87,"qid":92,"text":"내 판단대로 자유롭게 일하는 것이 중요하다."},{"no":88,"qid":102,"text":"화면 속 데이터보다 실제 현장에서 눈으로 보고 손으로 확인할 때 더 정확히 판단한다."},{"no":89,"qid":5,"text":"깊이 분석하기보다 결론만 빨리 알면 된다고 생각한다."},{"no":90,"qid":55,"text":"정보가 부족하거나 모순될 때도 종합해 판단을 내린다."},{"no":91,"qid":76,"text":"누가 가르쳐 주지 않으면 새로 배우기 어렵다."},{"no":92,"qid":12,"text":"새로운 것을 상상하거나 표현하는 일에 흥미가 없다."},{"no":93,"qid":70,"text":"새로운 기술·도구는 가능하면 피하고 싶다."},{"no":94,"qid":87,"text":"일의 보람보다 개인적 보상이 우선이다."},{"no":95,"qid":14,"text":"직접 무언가를 설계하고 만들어 작동시키는 일에 끌린다."},{"no":96,"qid":101,"text":"손과 몸을 세밀하게 써서 기술을 익히는 일(운동·악기·수공예 등)에 소질이 있다."},{"no":97,"qid":18,"text":"무언가를 직접 만들고 고치는 일에 흥미가 없다."},{"no":98,"qid":29,"text":"남을 이끌거나 설득하는 일은 나와 맞지 않는다."},{"no":99,"qid":32,"text":"규칙과 절차에 맞춰 정확하게 처리하는 일에 강하다."},{"no":100,"qid":36,"text":"꼼꼼히 정리·관리하는 일은 지루하다."},{"no":101,"qid":95,"text":"오래 한 우물을 파는 것이 내게 맞는다."},{"no":102,"qid":4,"text":"실험·조사를 통해 가설을 검증하는 과정에 흥미를 느낀다."},{"no":103,"qid":15,"text":"도구나 기술을 익혀 문제를 ‘직접 해결’하는 것을 좋아한다."},{"no":104,"qid":82,"text":"불확실해도 성장 가능성이 큰 쪽을 택하겠다."}];
 
@@ -328,6 +340,7 @@ function movePage(dir){
 /* ── 제출 ── */
 async function submit(){
   const payload = {
+    token: CONFIG.TOKEN,
     name: student.name, grade: student.grade, email: student.email,
     date: new Date().toISOString().slice(0,10),
     answers: Object.fromEntries(Object.entries(answers).map(([k,v]) => [String(k), v])),
@@ -339,34 +352,35 @@ async function submit(){
   const btn = document.getElementById("btnNext");
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>제출 중…';
 
-  let msg;
-  if(CONFIG.ENDPOINT){
+  let msg = null;
+  // 1차: 접수 서버 자동 탐색 후 전송 (실패하면 파일 다운로드로 전환)
+  const endpoint = await resolveEndpoint();
+  if(endpoint){
     try{
-      const r = await fetch(CONFIG.ENDPOINT, {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 20000);
+      const r = await fetch(endpoint, {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload), signal: ctrl.signal
       });
+      clearTimeout(timer);
       if(!r.ok) throw new Error("HTTP "+r.status);
       msg = `${student.name} 학생의 응답이 안전하게 접수되었습니다.<br>
-             진단 리포트는 <b>${student.email}</b> 으로 발송됩니다.`;
-      localStorage.removeItem(LS_KEY);
-    }catch(err){
-      btn.disabled = false; btn.textContent = "제출하기";
-      alert("제출 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.\n(오류: "+err.message+")");
-      return;
-    }
-  }else{
-    // 서버 미연결(수동 운영) — 응답 파일 다운로드
+             진단 리포트는 잠시 후 <b>${student.email}</b> 으로 발송됩니다.`;
+    }catch(err){ msg = null; }
+  }
+  if(!msg){
+    // 2차: 서버 연결 불가 — 응답 파일 다운로드 (응답 유실 방지)
     const blob = new Blob([JSON.stringify(payload, null, 1)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `C-MAP_응답_${student.name}_${payload.date}.json`;
     a.click();
-    msg = `응답 파일이 다운로드되었습니다.<br>
+    msg = `지금은 접수 서버와 연결되지 않아 <b>응답 파일이 다운로드</b>되었습니다.<br>
            다운로드된 <b>C-MAP_응답_${student.name}_${payload.date}.json</b> 파일을
-           올인원에듀에 보내주시면 진단 리포트를 <b>${student.email}</b> 으로 보내드립니다.`;
-    localStorage.removeItem(LS_KEY);
+           올인원에듀(카카오톡·문자)로 보내주시면 진단 리포트를 <b>${student.email}</b> 으로 보내드립니다.`;
   }
+  localStorage.removeItem(LS_KEY);
   document.getElementById("viewQuiz").classList.add("hidden");
   document.getElementById("topbar").style.display = "none";
   document.getElementById("doneMsg").innerHTML = msg;
