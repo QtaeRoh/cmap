@@ -2,6 +2,10 @@
 received/
 reports/
 receiver.py
+run_service.py
+접수대장.csv
+*.bat
+*.png
 *.xlsx
 *.docx
 *.pdf
